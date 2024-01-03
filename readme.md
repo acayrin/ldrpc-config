@@ -1,5 +1,5 @@
-# linux-discord-rpc config
-personal config for [linux-discord-rpc](https://github.com/trickybestia/linux-discord-rich-presence/blob/main/doc/configs/all-in-one.sh)
+# linux-discord-rich-presence config
+Personal config for [linux-discord-rich-presence](https://github.com/trickybestia/linux-discord-rich-presence/blob/main/doc/configs/all-in-one.sh)
 
 
 **Variables**
@@ -9,7 +9,7 @@ CONF_DISCORD_APPID=<discord-application-id> # acquire from discord developer por
 
 **Running**
 ```bash
-$ env CONF_DISCORD_APPID=<app-id> linux-discord-rpc --config /path/to/config
+$ env CONF_DISCORD_APPID=<app-id> linux-discord-rich-presence --config /path/to/config
 ```
 
 <hr>

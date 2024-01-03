@@ -1,0 +1,16 @@
+#!/bin/bash
+
+function f_wl_active_app {
+    # base app id
+    app_id=$(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) | .app_id' | sed 's/"//g')
+
+    # if under xwayland
+    if [[ $(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) | .shell' | sed 's/"//g') == "xwayland" ]]; then
+        app_id=$(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) | .window_properties.title' | sed 's/"//g')
+    fi
+
+    # app active time
+    app_time=$(echo $(ps -p $(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) .pid') -o etime) | awk '{print $2}')
+
+    [[ "${app_id}" == "null" ]] && echo "Desktop" || echo "${app_id} (${app_time})"
+}

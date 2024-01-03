@@ -1,0 +1,22 @@
+#!/bin/bash
+for h in $(find "$(dirname "$0")/modules" -maxdepth 1 -type f); do . "$h"; done
+while true; do
+    v_cmus=$(f_cmus)
+
+    cat << EOF
+[ \
+    { \
+        "application_id": ${CONF_DISCORD_APPID}, \
+        "state": "🎵: $(json "${v_cmus}" .pretty)", \
+        "details": "👀: $(f_wl_active_app)", \
+        "large_image": { \
+            "key": "$(json "${v_cmus}" .hash)", \
+            "text": "$(json "${v_cmus}" .artist) - $(json "${v_cmus}" .title)" \
+        }, \
+        "small_image": null \
+    } \
+]
+EOF
+
+[[ -n "$DRPC_INTERVAL" ]] && sleep $DRPC_INTERVAL || sleep 5
+done

@@ -4,7 +4,7 @@ __current_song=""
 function f_cmus {
     CMUS_INFO="$(cmus-remote -Q)"
     
-    CMUS_SONG="$(echo "$CMUS_INFO" | grep title | cut -c 11-)" || "$(basename "$(echo "$CMUS_INFO" | grep file | cut -c 6- | sed 's/\(.*\)\..*/\1/')")"
+    CMUS_SONG="$(echo "$CMUS_INFO" | grep title | cut -c 11- | sed 's/"/\\"/g')" || "$(basename "$(echo "$CMUS_INFO" | grep file | cut -c 6- | sed 's/\(.*\)\..*/\1/')")"
     CMUS_ARTIST="$(echo "$CMUS_INFO" | grep "tag artist" | cut -c 12-)"
     CMUS_HASH=$(echo "$CMUS_INFO" | grep file | cut -c 6- | md5sum | awk '{print $1}')
 

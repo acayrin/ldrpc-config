@@ -1,4 +1,4 @@
 #!/bin/bash
 function json {
-    echo $1 | jq $2 | sed 's/"//g'
+    echo "$1" | jq "$2" | sed 's/"//g'
 }

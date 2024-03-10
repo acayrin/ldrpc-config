@@ -29,11 +29,14 @@ ffmpeg -loglevel error -i "$(cmus-remote -Q | grep file | cut -c 6-)" -an -vcode
 
 # resize + crop
 # discord asset shown size is 84x84
-convert -resize 84x "${script_dir}/cover.jpg" "${script_dir}/cover.jpg"
+convert -resize 200x "${script_dir}/cover.jpg" "${script_dir}/cover.jpg"
 convert -gravity center -crop 1:1 "${script_dir}/cover.jpg" "${script_dir}/cover.jpg"
 
 # convert to base64
 b64_image=$(echo $(base64 "${script_dir}/cover.jpg") | sed 's/ //g')
+
+# delete unused asset
+. "${script_dir}/delete_unused_asset" && echo "Deleted" || echo "Failed"
 
 # catch response
 response=$(curl --silent -X POST \

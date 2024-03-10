@@ -13,7 +13,13 @@ while true; do
             "key": "$(json "${v_cmus}" .hash)", \
             "text": "$(json "${v_cmus}" .artist) - $(json "${v_cmus}" .title)" \
         }, \
-        "small_image": null \
+        "small_image": null, \
+        "buttons": [ \
+            { \
+                "label": "Source", \
+                "url": "https://github.com/trickybestia/linux-discord-rich-presence" \
+            } \
+        ] \
     } \
 ]
 EOF

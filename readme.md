@@ -1,29 +1,34 @@
 # linux-discord-rich-presence config
-Personal config for [linux-discord-rich-presence](https://github.com/trickybestia/linux-discord-rich-presence/blob/main/doc/configs/all-in-one.sh)
+personal config for [linux-discord-rich-presence](https://github.com/trickybestia/linux-discord-rich-presence/blob/main/doc/configs/all-in-one.sh)
+
+![Profile](https://i.imgur.com/vYYjsUM.png)
 
 
-**Variables**
+**variables**
 ```bash
 CONF_DISCORD_APPID=<discord-application-id> # acquire from discord developer portal
 ```
 
-**Running**
+**running**
 ```bash
-$ env CONF_DISCORD_APPID=<app-id> linux-discord-rich-presence --config /path/to/config
+$ env CONF_DISCORD_APPID=<app-id> ... linux-discord-rich-presence --config /path/to/config
 ```
 
 <hr>
 
 ### module: cmus
-> get cmus playing song as status
-> show "Not playing" if cmus is inactive
-> additionally dynamically set large_image with cover image if possible
+> show cmus currently playing song as status
+> 
+> show "Not playing" while cmus is inactive
+>
+> additionally set cover image as large_image and automatically remove unused assets to avoid the 300 limit
 
-**Variables**
+**variables**
 ```bash
-CONF_CMUS_DISCORD_TOKEN=<discord-user-token> # for uploading cover image assets
+CONF_CMUS_DISCORD_TOKEN=<discord-user-token> # for managing presence assets
 ```
 
 ### module: sway focused window
-> get current focused window as status
-> show "Desktop" if no window was focused
+> set currently focused window as status
+>
+> show "Desktop" while no window is focused

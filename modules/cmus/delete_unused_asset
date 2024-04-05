@@ -1,5 +1,8 @@
 #!/bin/bash
-[[ ! -n "${DTOKEN}" ]] || [[ ! -n "${DAPPID}" ]] && echo "Running outside module, exitting..." && exit 1
+[[ ! -n "${DTOKEN}" ]] || [[ ! -n "${DAPPID}" ]] && {
+  echo "Running outside module, exitting..."
+  exit 1
+}
 
 script_dir="$(dirname "$0")"
 
@@ -8,7 +11,7 @@ md5_song=$(echo "$(cmus-remote -Q | grep file | cut -c 6-)" | md5sum | awk '{pri
 asset_array=$(curl --silent -X GET \
   -H "Content-Type: application/json" \
   -H "Authorization: ${DTOKEN}" \
-  https://canary.discord.com/api/v9/oauth2/applications/${DAPPID}/assets)
+  https://discord.com/api/v9/oauth2/applications/${DAPPID}/assets)
 
 asset_count=$(jq  <<< "$asset_array" length)
 asset_random=$(jq <<< "$asset_array" ".[$(shuf -i 0-${asset_count} -n 1)]")
@@ -21,7 +24,7 @@ done
 
 (curl --silent -X DELETE \
   -H "Authorization: ${DTOKEN}" \
-  https://canary.discord.com/api/v9/oauth2/applications/${DAPPID}/assets/$(jq <<< "$asset_random" .id | sed 's/"//g')
+  https://discord.com/api/v9/oauth2/applications/${DAPPID}/assets/$(jq <<< "$asset_random" .id | sed 's/"//g')
 ) && (
   rm -f "${script_dir}/covers/$(jq <<< "$asset_random" .id | sed 's/"//g')"
   exit 0

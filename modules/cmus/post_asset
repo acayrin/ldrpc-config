@@ -1,14 +1,13 @@
 #!/bin/bash
-[[ ! -n "${DTOKEN}" ]] || [[ ! -n "${DAPPID}" ]] && echo "Running outside module, exitting..." && exit 1
+[[ ! -n "${DTOKEN}" ]] || [[ ! -n "${DAPPID}" ]] && {
+  echo "Running outside module, exitting..."
+  exit 1
+}
 
 script_dir="$(dirname "$0")"
 
-if [[ ! -d "${script_dir}/covers" ]]; then
-  mkdir "${script_dir}/covers"
-fi
-if [[ -f "${script_dir}/cover.jpg" ]]; then
-  rm -f "${script_dir}/cover.jpg"
-fi
+[ ! -d "${script_dir}/covers"  ] && mkdir "${script_dir}/covers"
+[ -f "${script_dir}/cover.jpg" ] && rm -f "${script_dir}/cover.jpg"
 
 # get md5 string of song
 md5_song=$(echo "$(cmus-remote -Q | grep file | cut -c 6-)" | md5sum | awk '{print $1}')
@@ -36,7 +35,7 @@ convert -gravity center -crop 1:1 "${script_dir}/cover.jpg" "${script_dir}/cover
 b64_image=$(echo $(base64 "${script_dir}/cover.jpg") | sed 's/ //g')
 
 # delete unused asset
-. "${script_dir}/delete_unused_asset" && echo "Deleted" || echo "Failed"
+bash "${script_dir}/delete_unused_asset"
 
 # catch response
 response=$(curl --silent -X POST \

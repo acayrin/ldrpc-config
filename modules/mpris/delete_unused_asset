@@ -1,0 +1,42 @@
+#!/bin/sh
+if [ -z "${CONF_DISCORD_USER_TOKEN}" ] || [ -z "${CONF_DISCORD_APPID}" ]; then
+	echo "Running outside module, exitting..."
+	exit 1
+fi
+
+script_dir="${script_dir:-}"
+_m_hash="${_m_hash:-}"
+
+asset_array="$(curl --silent -X GET \
+	-H "Content-Type: application/json" \
+	-H "Authorization: ${CONF_DISCORD_USER_TOKEN}" \
+	https://discord.com/api/v9/oauth2/applications/"${CONF_DISCORD_APPID}"/assets)"
+asset_count=$(echo "$asset_array" | jq length)
+
+# exit if asset is already added
+if echo "$asset_array" | grep "$_m_hash" >/dev/null; then
+	[ -n "$DEBUG" ] && echo "==> skipped asset $_m_hash"
+	exit 1
+fi
+
+# only delete old assets once total count passes 290 (max allowed is 300)
+[ -n "$DEBUG" ] && echo "==> asset count $asset_count/300"
+if [ "$asset_count" -lt 290 ]; then exit 0; fi
+
+asset_random=$(echo "$asset_array" | jq -r ".[$(shuf -i 0-"$asset_count" -n 1)]")
+asset_randid="$(echo "$asset_random" | jq -r .id)"
+
+while [ "${_m_hash}" = "$(echo "$asset_random" | jq -r .name)" ]; do
+	asset_random="$(echo "$asset_array" | jq -r ".[$(shuf -i 0-"$asset_count" -n 1)]")"
+	asset_randid="$(echo "$asset_random" | jq -r .id)"
+done
+
+if curl --silent -X DELETE \
+	-H "Authorization: $CONF_DISCORD_USER_TOKEN" \
+	https://discord.com/api/v9/oauth2/applications/"$CONF_DISCORD_APPID"/assets/"$asset_randid" >/dev/null 2>&1; then
+	[ -n "$DEBUG" ] && echo "==> deleted asset $asset_randid"
+
+	rm -f "$script_dir/.covers/$_m_hash"
+else
+	[ -n "$DEBUG" ] && echo "==> failed to delete asset $asset_randid"
+fi

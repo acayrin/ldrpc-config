@@ -1,0 +1,36 @@
+#!/bin/sh
+displaytime() {
+	h=$(($1 / 3600))
+	m=$((($1 % 3600) / 60))
+	s=$(($1 % 60))
+	printf "%02d:%02d:%02d\n" $h $m $s
+}
+
+get_metadata() {
+	_metadata="$(playerctl --player="$1" metadata)"
+
+	t_file="$(echo "$_metadata" | awk '/xesam:url/ {for(i=3; i<=NF; ++i) printf "%s ", $i; print ""}' | xargs echo -n)"
+	t_title="$(echo "$_metadata" | awk '/xesam:title/ {for(i=3; i<=NF; ++i) printf "%s ", $i; print ""}')"
+	t_title="$(echo "$t_title" | sed 's/&/&amp;/g' | xargs echo -n)"
+	t_hash="$(echo "$t_title" | md5sum | awk '{print $1}')"
+	t_artist="$(echo "$_metadata" | awk '/xesam:artist/ {for(i=3; i<=NF; ++i) printf "%s ", $i; print ""}' | xargs echo -n)"
+	t_duration="$(echo "$_metadata" | awk '/mpris:length/ {print $3}')"
+	t_duration="$((t_duration / 1000000))"
+	t_current="$(playerctl --player="$1" position)"
+	t_current="${t_current%.*}"
+	# t_percentage="$(echo $(((t_current * 100) / t_duration)) 2>/dev/null || 0)"
+
+	cat <<EOF
+	{ \
+		"file": "${t_file}", \
+		"hash": "${t_hash}", \
+		"title": "${t_title}", \
+		"artist": "${t_artist}", \
+		"pretty": "$([ -n "${t_title}" ] && echo "${t_title} ($(displaytime "$t_current")/$(displaytime "$t_duration"))" || echo "Not playing")", \
+		"time": { \
+			"current": "$(displaytime "$t_current")", \
+			"duration": "$(displaytime "$t_duration")" \
+		} \
+	}
+EOF
+}

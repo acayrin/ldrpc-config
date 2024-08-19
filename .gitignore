@@ -1,1 +1,5 @@
-modules/cmus/covers
+.covers
+.env
+run
+start
+start.sh

@@ -1,0 +1,20 @@
+#!/bin/sh
+_path="$(dirname "$0")/modules/mpris"
+_current_song=""
+
+. "${_path}/helper"
+
+f_mpris() {
+	export metadata
+	metadata="$(get_metadata "${CONF_MPRIS_PLAYER:-mpd}")"
+
+	_m_title="$(echo "$metadata" | jq .title)"
+
+	if [ -n "${_m_title}" ] && { [ -z "${_current_song}" ] || [ "${_current_song}" != "${_m_title}" ]; }; then
+		_current_song="${_m_title}"
+
+		env sh "${_path}/post_asset"
+	fi
+
+	echo "$metadata"
+}

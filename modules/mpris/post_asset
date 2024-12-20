@@ -1,63 +1,65 @@
-#!/bin/sh
+#!/bin/env sh
 if [ -z "${CONF_DISCORD_USER_TOKEN}" ] || [ -z "${CONF_DISCORD_APPID}" ]; then
 	echo "Running outside module, exitting..."
 	exit 1
 fi
 
-metadata="${metadata:-}"
-export script_dir
 script_dir="$(dirname "$0")"
-export _m_hash
+. "$(realpath "${script_dir}")/helper"
+
+if [ -z "${metadata:-}" ]
+then
+	metadata="$(get_metadata "${CONF_MPRIS_PLAYER:-mpd}")"
+fi
 _m_hash="$(echo "$metadata" | jq -r .hash)"
 _m_file="$(echo "$metadata" | jq -r .file)"
 
-[ -f "$script_dir/cover.jpg" ] && rm "$script_dir/cover.jpg"
-[ ! -d "$script_dir/.covers" ] && mkdir -p "$script_dir/.covers"
+rm -f "${script_dir}"/cover_*.jpg 
 
-# check if required asset is already uploaded according to local cache
-# this is needed to prevent spam uploading since discord requires some time
-# to cache newly uploaded assets
-[ -f "$script_dir/.covers/$_m_hash" ] && exit 0
-
-# check and delete an unused asset if needed
-# if required asset is already uploaded according to the discord api
-# then we'll mark that said asset as already uploaded via local file
-# to prevent spamming requests to said api
-if ! env sh "${script_dir}/delete_unused_asset"; then
-	touch "$script_dir/.covers/$_m_hash"
-
+# check if required asset is already uploaded to discord
+if [ "$(has_asset "$_m_hash")" = "1" ]; then
+	[ -n "$DEBUG" ] && notify-send "LDRPC" "$_m_hash already exists"
 	exit 0
 fi
 
+# file name correction
+if echo "$_m_file" | grep -e "file://" >/dev/null
+then
+	_m_file="$(printf '%s' "$_m_file" | sed -e 's@file://@@g')"
+else
+	_m_file="$CONF_MEDIA_PATH/$_m_file"
+fi
 # extract cover
-yes | ffmpeg -loglevel error -i "$CONF_MEDIA_PATH/$_m_file" -an -vcodec copy "${script_dir}/cover.jpg" >/dev/null 2>&1
+ffmpeg -loglevel error -y -i "$_m_file" -an -c:v png -f image2 -update true "${script_dir}/cover_1.jpg" >/dev/null 2>&1
 
 # resize and center crop
 # icons are shown at fixed 84x84
-magick "${script_dir}/cover.jpg" -resize 84x "${script_dir}/cover.jpg"
-_f="$(identify -format "%w %h" "${script_dir}/cover.jpg")"
+magick "${script_dir}/cover_1.jpg" -resize 84x "${script_dir}/cover_2.jpg"
+_f="$(identify -format "%w %h" "${script_dir}/cover_2.jpg")"
 _w="$(echo "$_f" | awk '{print $1}')"
 _h="$(echo "$_f" | awk '{print $2}')"
 _n=$_w
 [ "$_h" -lt "$_n" ] && _n=$_h
-magick "${script_dir}/cover.jpg" -gravity center -extent "${_n}x${_n}" "${script_dir}/cover.jpg"
+magick "${script_dir}/cover_2.jpg" -gravity center -extent "${_n}x${_n}" "${script_dir}/cover_3.jpg"
 
 # convert image to base64 string and upload to discord
-base64_str="$(base64 "${script_dir}/cover.jpg" | sed 's/ //g' | xargs echo)"
+base64_str="$(base64 -w0 "${script_dir}"/cover_3.jpg)"
 
 curl --silent -X POST \
 	-H "Content-Type: application/json" \
 	-H "Authorization: ${CONF_DISCORD_USER_TOKEN}" \
 	-d '{"name":"'"${_m_hash}"'","image":"data:image/jpg;base64,'"${base64_str}"'","type":"1"}' \
 	https://discord.com/api/v9/oauth2/applications/"${CONF_DISCORD_APPID}"/assets 2>/dev/null | {
+
 	# check if request return an asset id
 	read -r res
 	id="$(echo "$res" | jq -r .id)"
-	if [ -n "$id" ]; then
-		[ -n "$DEBUG" ] && echo "==> uploaded asset $_m_hash"
-
-		echo "$id" >"$script_dir/.covers/$_m_hash"
-	else
-		[ -n "$DEBUG" ] && echo "==> failed to upload asset $_m_hash"
-	fi
+	case $id in
+    ''|*[!0-9]*)
+			[ -n "$DEBUG" ] && notify-send "LDRPC" "failed to upload asset $_m_hash"
+    ;;
+    *)
+			[ -n "$DEBUG" ] && notify-send "LDRPC" "uploaded asset $_m_hash -> $id"
+    ;;
+	esac
 }

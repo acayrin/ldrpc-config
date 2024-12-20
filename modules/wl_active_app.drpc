@@ -3,7 +3,7 @@
 f_wl_active_app() {
 	if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]; then
 		f_wl_active_app_hyprland
-	elif [ -n "$SWAY_SOCK" ]; then
+	elif [ -n "$SWAYSOCK" ]; then
 		f_wl_active_app_sway
 	fi
 }
@@ -20,13 +20,13 @@ f_wl_active_app_hyprland() {
 }
 
 f_wl_active_app_sway() {
-	app_title="$(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) | .app_id' | sed 's/"//g')"
+	app_title="$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused == true) | .app_id')"
 	# get child window if running under xwayland
-	if [ "$(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) | .shell' | sed 's/"//g')" = "xwayland" ]; then
-		app_title=$(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) | .window_properties.title' | sed 's/"//g')
+	if [ "$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused == true) | .shell')" = "xwayland" ]; then
+		app_title=$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused == true) | .window_properties.title')
 	fi
-	app_pid="$(swaymsg -t get_tree | jq '.. | objects | select(.focused == true) .pid')"
-	app_time="$(ps -p "$app_pid" -o etime | awk '{print $2}')"
+	app_pid="$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused == true) .pid')"
+	app_time="$(echo $(ps -p "$app_pid" -o etime) | awk '{print $2}')"
 
 	[ "${app_title}" = "null" ] && echo "Desktop" || echo "${app_title} (${app_time})"
 }

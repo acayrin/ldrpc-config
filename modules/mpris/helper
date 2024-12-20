@@ -1,9 +1,61 @@
-#!/bin/sh
+#!/bin/env sh
 displaytime() {
 	h=$(($1 / 3600))
 	m=$((($1 % 3600) / 60))
 	s=$(($1 % 60))
 	printf "%02d:%02d:%02d\n" $h $m $s
+}
+
+get_assets() {
+	curl --silent -X GET \
+		-H "Content-Type: application/json" \
+		-H "Authorization: ${CONF_DISCORD_USER_TOKEN}" \
+		https://discord.com/api/v9/oauth2/applications/"${CONF_DISCORD_APPID}"/assets?nocache=true 2>/dev/null | jq -r 'sort_by(.id)'
+}
+
+delete_oldest_asset() {
+	if [ -n "$1" ]; then
+		assets="$1"
+	else
+		assets="$(get_assets)"
+	fi
+	asset_id=$(echo "$assets" | jq -r '.[0] | .id')
+
+	curl --silent -X DELETE \
+		-H "Authorization: ${CONF_DISCORD_USER_TOKEN}" \
+		-o /dev/null -w "%{http_code}" \
+		https://discord.com/api/v9/oauth2/applications/"${CONF_DISCORD_APPID}"/assets/"${asset_id}" 2>/dev/null | {
+		read -r res
+		if [ "$res" -eq 204 ]
+		then
+			[ -n "$DEBUG" ] && notify-send "LDRPC" "deleted asset $asset_id"
+		else
+			[ -n "$DEBUG" ] && notify-send "LDRPC" "failed to delete asset $asset_id"
+		fi
+	}
+}
+
+delete_asset_as_needed() {
+	if [ -n "$1" ]; then
+		assets="$1"
+	else
+		assets="$(get_assets)"
+	fi
+	asset_count=$(echo "$assets" | jq -r length)
+	[ "$asset_count" -ge 295 ] && delete_oldest_asset "$assets"
+}
+
+has_asset() {
+	assets="$(get_assets)"
+	has_asset=$(echo "$assets" | jq -r ".. | objects | select(.name == \"${1}\")")
+
+	delete_asset_as_needed "$assets" &
+	
+	if [ -n "$has_asset" ] && [ "$has_asset" != "null" ];	then
+		echo 1
+	else
+		echo 0
+	fi
 }
 
 get_metadata() {
@@ -26,7 +78,7 @@ get_metadata() {
 		"hash": "${t_hash}", \
 		"title": "${t_title}", \
 		"artist": "${t_artist}", \
-		"pretty": "$([ -n "${t_title}" ] && echo "${t_title} ($(displaytime "$t_current")/$(displaytime "$t_duration"))" || echo "Not playing")", \
+		"pretty": "$([ -n "${t_title}" ] && echo "${t_artist} - ${t_title} ($(displaytime "$t_current")/$(displaytime "$t_duration"))" || echo "Not playing")", \
 		"time": { \
 			"current": "$(displaytime "$t_current")", \
 			"duration": "$(displaytime "$t_duration")" \

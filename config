@@ -3,12 +3,13 @@ for mod in "$(dirname "$0")"/modules/*.drpc; do
 	. "$mod"
 done
 
-while true; do
+while :; do
 	m_mpris="$(f_mpris)"
+	m_mpris="$(echo "$m_mpris" | awk '{$1=$1};1')"
 
-	if [ -n "$DEBUG" ]; then
-		echo "$m_mpris"
-	else
+	# if [ -n "$DEBUG" ]; then
+	# 	echo "${m_mpris}" | jq -r .hash
+	# else
 		cat <<EOF
 	[ \
 	    { \
@@ -17,14 +18,14 @@ while true; do
 	        "details": "👀: $(f_wl_active_app)", \
 	        "large_image": { \
 	            "key": "$(echo "${m_mpris}" | jq -r .hash)", \
-	            "text": "$(echo "${m_mpris}" | jq -r .artist) - $(echo "${m_mpris}" | jq -r .title)" \
+	            "text": "$(echo "${m_mpris}" | jq -r .artist) - $(echo "${m_mpris}" | jq -r .title | sed "s/'/\\\'/g")" \
 	        }, \
 	        "small_image": null, \
 	        "buttons": [] \
 	    } \
 	]
 EOF
-	fi
+	# fi
 
 	sleep "${CONF_INTERVAL:-1}"
 done
